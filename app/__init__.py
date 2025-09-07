@@ -3,6 +3,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
+from app.utils.logging import configure_logging
 from config import Config
 
 app = Flask(__name__)
@@ -14,4 +15,6 @@ migrate = Migrate(app, db)
 login = LoginManager(app)
 login.login_view = "login"
 
-from app import models, routes  # noqa: E402, F401
+configure_logging(app)
+
+from app import errors, models, routes  # noqa: E402, F401
