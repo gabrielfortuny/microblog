@@ -1,14 +1,13 @@
-import base64
 from datetime import datetime, timezone
 from typing import Optional
 
-import pydenticon
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db, login
+from app.utils.identicons import generate_identicon
 
 
 class User(UserMixin, db.Model):
@@ -33,29 +32,8 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def avatar(self, size: int):
-        foreground = [
-            "rgb(45,79,255)",
-            "rgb(254,180,44)",
-            "rgb(226,121,234)",
-            "rgb(30,179,253)",
-            "rgb(232,77,65)",
-            "rgb(49,203,115)",
-            "rgb(141,69,170)",
-        ]
-        background = "rgb(224,224,224)"
-        padding_size = size // 8
-        padding = (padding_size, padding_size, padding_size, padding_size)
-        block_size = 8
-
-        generator = pydenticon.Generator(
-            block_size, block_size, foreground=foreground, background=background
-        )
-
-        identicon = generator.generate(self.username, size, size, padding=padding)
-
-        # returns a data URL for embedding in HTML
-        identicon_base64 = base64.b64encode(identicon).decode("ascii")
-        return f"data:image/png;base64,{identicon_base64}"
+        """Generate an identicon for the user."""
+        return generate_identicon(self.username, size)
 
 
 @login.user_loader
