@@ -17,4 +17,8 @@ login.login_view = "login"
 
 configure_logging(app)
 
+from app import cli  # noqa: E402
+
+cli.init_app(app)
+
 from app import errors, models, routes  # noqa: E402, F401
