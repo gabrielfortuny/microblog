@@ -9,3 +9,4 @@ class Config:
     SQLALCHEMY_DATABASE_URI = (
         os.environ.get("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'app.db'}"
     )
+    POSTS_PER_PAGE = 25
