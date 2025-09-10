@@ -1,8 +1,8 @@
-"""init
+"""nuked
 
-Revision ID: 814a7c07dd90
+Revision ID: b6c1a66d4266
 Revises: 
-Create Date: 2025-09-04 00:57:06.864507
+Create Date: 2025-09-09 20:43:08.868198
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '814a7c07dd90'
+revision = 'b6c1a66d4266'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -22,13 +22,22 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=64), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
-    sa.Column('password_hash', sa.String(length=256), nullable=False),
+    sa.Column('password_hash', sa.String(length=256), nullable=True),
+    sa.Column('about_me', sa.String(length=140), nullable=True),
+    sa.Column('last_seen', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('user', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_user_email'), ['email'], unique=True)
         batch_op.create_index(batch_op.f('ix_user_username'), ['username'], unique=True)
 
+    op.create_table('followers',
+    sa.Column('follower_id', sa.Integer(), nullable=False),
+    sa.Column('followed_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['followed_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['follower_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('follower_id', 'followed_id')
+    )
     op.create_table('post',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('body', sa.String(length=140), nullable=False),
@@ -51,6 +60,7 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_post_timestamp'))
 
     op.drop_table('post')
+    op.drop_table('followers')
     with op.batch_alter_table('user', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_user_username'))
         batch_op.drop_index(batch_op.f('ix_user_email'))

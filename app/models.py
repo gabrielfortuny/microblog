@@ -9,6 +9,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import db, login
 from app.utils.identicons import generate_identicon
 
+followers = sa.Table(
+    "followers",
+    db.metadata,
+    sa.Column("follower_id", sa.Integer, sa.ForeignKey("user.id"), primary_key=True),
+    sa.Column("followed_id", sa.Integer, sa.ForeignKey("user.id"), primary_key=True),
+)
+
 
 class User(UserMixin, db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -21,6 +28,18 @@ class User(UserMixin, db.Model):
     )
 
     posts: so.WriteOnlyMapped["Post"] = so.relationship(back_populates="author")
+    following: so.WriteOnlyMapped["User"] = so.relationship(
+        secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        back_populates="followers",
+    )
+    followers: so.WriteOnlyMapped["User"] = so.relationship(
+        secondary=followers,
+        primaryjoin=(followers.c.followed_id == id),
+        secondaryjoin=(followers.c.follower_id == id),
+        back_populates="following",
+    )
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -32,8 +51,52 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def avatar(self, size: int):
-        """Generate an identicon for the user."""
         return generate_identicon(self.username, size)
+
+    def is_following(self, user):
+        query = self.following.select().where(User.id == user.id)
+        return db.session.scalar(query) is not None
+
+    def follow(self, user):
+        if user.id == self.id:
+            raise ValueError("Users may not follow themselves")
+        if not self.is_following(user):
+            self.following.add(user)
+
+    def unfollow(self, user):
+        if user.id == self.id:
+            raise ValueError("Users may not unfollow themselves")
+        if self.is_following(user):
+            self.following.remove(user)
+
+    def followers_count(self):
+        query = sa.select(sa.func.count()).select_from(
+            self.followers.select().subquery()
+        )
+        return db.session.scalar(query)
+
+    def following_count(self):
+        query = sa.select(sa.func.count()).select_from(
+            self.following.select().subquery()
+        )
+        return db.session.scalar(query)
+
+    def following_posts(self):
+        Author = so.aliased(User)
+        Follower = so.aliased(User)
+        return (
+            sa.select(Post)
+            .join(Post.author.of_type(Author))
+            .join(Author.followers.of_type(Follower), isouter=True)
+            .where(
+                sa.or_(
+                    Follower.id == self.id,
+                    Author.id == self.id,
+                )
+            )
+            .group_by(Post)
+            .order_by(Post.timestamp.desc())
+        )
 
 
 @login.user_loader
@@ -48,7 +111,6 @@ class Post(db.Model):
         index=True, default=lambda: datetime.now(timezone.utc)
     )
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
-
     author: so.Mapped[User] = so.relationship(back_populates="posts")
 
     def __repr__(self):
