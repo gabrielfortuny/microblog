@@ -10,6 +10,7 @@ dependencies = [
     "flask>=3.1.2",
     "flask-login>=0.6.3",
     "flask-migrate>=4.1.0",
+    "flask-moment>=1.0.6",
     "flask-sqlalchemy>=3.1.1",
     "flask-wtf>=1.2.2",
     "pathlib>=1.0.1",
