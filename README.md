@@ -2,7 +2,7 @@
 
 A Twitter-style social microblogging app built with Flask. Users can post, follow others, and view personalized feeds.
 
-Based on [Miguel Grinberg's Flask Mega-Tutorial](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world).
+Based on [Miguel Grinberg's Flask Mega-Tutorial](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world) with some extra fun features.
 
 ![Screenshot](docs/screenshot.png)
 
